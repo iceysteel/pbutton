@@ -11,10 +11,42 @@ export default class App extends Component {
       longitudeDelta: 0.0421,
  	error: null,
     },
+    markers: [],
   };
 
   _handleMapRegionChange = mapRegion => {
     this.setState({ mapRegion });
+		fetch('https://x7vhm0ojp9.execute-api.us-east-1.amazonaws.com/dev/todos', {
+  method: 'GET',
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
+ /* body: JSON.stringify({
+    text: position.coords.latitude + "," + position.coords.longitude,
+  }),*/
+}).then((response) => response.json())
+    .then((responseJson) => {
+	for (let textObject of responseJson){
+        	this.setState({
+				markers: this.state.markers.concat([
+					{
+					coordinates:{
+						latitude :parseFloat(textObject.text.split(',')[0]),
+						longitude : parseFloat(textObject.text.split(',')[1]),  
+					}
+					}
+					])
+                        	
+                	 });
+	
+	}
+        return 1;
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+	
   };
 
   
@@ -31,10 +63,32 @@ export default class App extends Component {
 			 	error: null,
 			}
        		 });
+		//code for firing the request
+		console.log("about to send the request fam")
+        fetch('https://x7vhm0ojp9.execute-api.us-east-1.amazonaws.com/dev/todos', {
+  method: 'POST',
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    text: position.coords.latitude + "," + position.coords.longitude,
+  }),
+}).then((response) => response.json())
+    .then((responseJson) => {
+        console.log(responseJson);
+        return 1;
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+	//error code for geting position		 
 	},
       (error) => this.setState({ error: error.message }),
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
     );
+//end code for getting position
+//make request to lambda function
   }
 
   _onPressPanicButton =  () => {
@@ -52,24 +106,25 @@ export default class App extends Component {
 
 
     _onPressContactsButton() {
-    Alert.alert('You tapped the button!')
+    Alert.alert('Your selected contacts will be sent your location!')
   };
 
   _onPressParentsButton() {
-    Alert.alert('You tapped the button!')
+    Alert.alert('Your parents will be sent your location!')
   };
 
   _onPressFriendsButton() {
-    Alert.alert('You tapped the button!')
+    Alert.alert('Your friends will be sent your location!')
   };
   
   _onPressFalseButton() {
-    Alert.alert('You tapped the button!')
+    Alert.alert('Cancelling previous alert!')
   };
 
 // this ones the panic long press
-  _onLongPressButton() {
-    Alert.alert('You long-pressed the button!')
+  _onLongPressButton = () => {
+    Alert.alert('Panic confirmed!');
+    this.panic();
   };
 
 render() {
@@ -78,7 +133,7 @@ render() {
 	
 	<TouchableHighlight onPress={this._onPressPanicButton} onLongPress={this._onLongPressButton} underlayColor="white">
           <View style={styles.mainButton}>
-            <Text style={styles.panicText}>Panic! </Text>
+            <Text style={styles.panicText}>Alert!</Text>
           </View>
         </TouchableHighlight>
 
@@ -86,7 +141,19 @@ render() {
           style={{flex:2,  alignSelf: 'stretch', height: 200 }}
           region={this.state.mapRegion}
           onRegionChange={this._handleMapRegionChange}
-        />
+	  annotations={this.markers}
+        >
+	
+		<MapView.Marker
+			coordinate={this.state.mapRegion}
+ 		   title={"title"}
+	            description={"description"}
+		/>
+
+		{this.state.markers.map((marker, index) => ( 
+		<MapView.Marker key={index} coordinate={marker.coordinates} title={marker.title} /> ))}		
+	
+	</MapView>
         
 	<View style={{marginTop:20 , marginBottom:20, flexDirection: 'row', justifyContent:'space-between',  }} >
 	<TouchableHighlight onPress={this._onPressContactsButton} underlayColor="white">
